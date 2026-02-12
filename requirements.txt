@@ -1,0 +1,6 @@
+streamlit
+pandas
+entsoe-py
+requests
+beautifulsoup4
+lxml
