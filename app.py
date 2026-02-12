@@ -4,11 +4,19 @@ from entsoe import EntsoePandasClient
 import requests
 from bs4 import BeautifulSoup
 from datetime import timedelta
+import os
 
 # --- KONFIGURATSIOON ---
-# NB! Renderis pane see Environment Variable'iks, lokaalselt võid siia kleepida
-API_KEY = st.secrets["ENTSOE_KEY"] if "ENTSOE_KEY" in st.secrets else "SINU_ENTSOE_VÕTI_SIIA"
+# See rida proovib võtta võtit Renderi keskkonnamuutujatest (os.environ)
+# Kui sealt ei leia, proovib st.secrets (juhuks kui testid lokaalselt)
+API_KEY = os.environ.get("ENTSOE_KEY")
 
+if not API_KEY:
+    try:
+        API_KEY = st.secrets["ENTSOE_KEY"]
+    except:
+        st.error("API võti on puudu! Palun lisa Renderisse Environment Variable 'ENTSOE_KEY'.")
+        st.stop()
 st.set_page_config(page_title="Auvere Fännileht", page_icon="⚡", layout="centered")
 
 # --- CSS STILISTIKA (Silvia Ilves / Glamuur) ---
