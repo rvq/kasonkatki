@@ -24,7 +24,7 @@ st.markdown("""
     <style>
     /* Taust */
     .stApp {
-        background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Auvere_elektrijaam_2015.jpg/1200px-Auvere_elektrijaam_2015.jpg');
+        background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/e3/Auvere_Power_Plant%2C_2013..jpg');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
@@ -81,35 +81,40 @@ st.markdown("""
 
 # --- FUNKTSIOONID ---
 
-@st.cache_data(ttl=3600) # Hoiab andmeid vahemälus 1h, et API-t mitte spämmida
+@st.cache_data(ttl=300) # Uuenda iga 5 min tagant
 def get_auvere_data():
     client = EntsoePandasClient(api_key=API_KEY)
+    
+    # 1. Ajad paika (Võtame ainult viimased 24h)
     end = pd.Timestamp.now(tz='Europe/Tallinn')
-    start = end - timedelta(days=365) # Võtame aasta andmed statistika jaoks
+    start = end - timedelta(hours=24) 
     
     try:
-        # Pärime andmed
+        # Pärime ainult 1 päeva andmed (väga kiire)
         df = client.query_generation_per_plant('EE', start=start, end=end)
         
-        # Leiame õige veeru (nimi võib muutuda, otsime 'Auvere' järgi)
+        # Leiame Auvere veeru
         auvere_col = [c for c in df.columns if 'Auvere' in str(c)]
         if not auvere_col:
-            return None, "Andmed puuduvad"
+            return None, "Andmed puuduvad (veerg kadunud)"
             
         data = df[auvere_col[0]]
+        
+        # Võtame kõige viimase teadaoleva numbri
         current_mw = data.iloc[-1]
         
-        # Statistika
-        daily_max = data.resample('D').max()
-        days_down = daily_max[daily_max < 10].count() # Alla 10MW loeme maas olevaks
-        uptime = 100 - (days_down / daily_max.count() * 100)
+        # --- STATISTIKA FEIKIMINE ---
+        # Kuna me ei tõmba enam aasta andmeid, siis me ei saa 
+        # arvutada tegelikku "päevi maas" statsi.
+        # Paneme siia hetkel placeholderid, et kood katki ei läheks.
         
         return {
             "current_mw": round(current_mw, 1),
-            "is_running": current_mw > 10,
-            "days_down": int(days_down),
-            "uptime": round(uptime, 1)
+            "is_running": current_mw > 15, # Lävepakuks 15MW
+            "days_down": "---",  # Statistikat praegu ei arvuta
+            "uptime": "---"      # Statistikat praegu ei arvuta
         }, None
+        
     except Exception as e:
         return None, str(e)
 
@@ -148,7 +153,7 @@ def get_news():
         # Prindime vea konsooli, et näha mis juhtus
         print(f"Uudiste viga: {e}")
         return []
-        
+
 # --- LEHE SISU ---
 
 # Pilt (URL otse HTML-i injectitud, aga võib ka st.image kasutada)
