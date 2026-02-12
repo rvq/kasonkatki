@@ -115,21 +115,40 @@ def get_auvere_data():
 
 @st.cache_data(ttl=7200) # Uudiseid uuenda iga 2h tagant
 def get_news():
-    url = "https://otsing.err.ee/otsing?phrase=auvere"
+    # Kasutame Google News RSS-i, mis otsib märksõna "Auvere elektrijaam"
+    # hl=et (keel), gl=EE (regioon)
+    url = "https://news.google.com/rss/search?q=auvere+elektrijaam&hl=et&gl=EE&ceid=EE:et"
+    
     try:
-        r = requests.get(url)
-        soup = BeautifulSoup(r.content, 'html.parser')
-        results = soup.select('.search-results__item')[:3]
-        news = []
-        for item in results:
-            title = item.select_one('h3 a').text.strip()
-            link = item.select_one('h3 a')['href']
-            date = item.select_one('.search-results__time').text.strip()
-            news.append({"title": title, "link": link, "date": date})
-        return news
-    except:
-        return []
+        # 1. Teeme päringu
+        response = requests.get(url, timeout=5)
+        
+        # 2. Parsime XML sisu
+        soup = BeautifulSoup(response.content, features='xml')
+        
+        # 3. Võtame esimesed 5 uudist
+        items = soup.findAll('item')[:5]
+        
+        news_list = []
+        for item in items:
+            title = item.title.text
+            link = item.link.text
+            # Kuupäev on tavaliselt formaadis "Thu, 12 Feb 2026...", teeme ilusamaks
+            pub_date = item.pubDate.text[:16] 
+            
+            news_list.append({
+                "title": title,
+                "link": link,
+                "date": pub_date
+            })
+            
+        return news_list
 
+    except Exception as e:
+        # Prindime vea konsooli, et näha mis juhtus
+        print(f"Uudiste viga: {e}")
+        return []
+        
 # --- LEHE SISU ---
 
 # Pilt (URL otse HTML-i injectitud, aga võib ka st.image kasutada)
